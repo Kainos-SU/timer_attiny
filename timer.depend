@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1661808367 source:/home/kapinos/Documents/avr/timer/main.c
+	<avr/io.h>
+	<avr/interrupt.h>
+	<stdbool.h>
+	"modules/cd4017_control.h"
+
+1661810536 source:/home/kapinos/Documents/avr/timer/modules/cd4017_control.c
+	<avr/io.h>
+	<stddef.h>
+	<stdbool.h>
+	"cd4017_control.h"
+
+1661808524 /home/kapinos/Documents/avr/timer/modules/cd4017_control.h
+
