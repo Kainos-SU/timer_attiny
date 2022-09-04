@@ -23,61 +23,86 @@ void initDispay() {
     DDRB = 0xFF;
     PORTB = 0xFF;
     for (int i = 0; i < NUMBER_OF_DIGITS; ++i) {
-        ledController.indicatorData[i] = 0x00;
+        ledController.indicatorData[i] = NUMBERS_TABLE[i + 1] - 1;
+        // ledController.indicatorData[i] = 0xFF;
     }
 }
 
-bool tick() {
+void tick() {
+    PORTB = 0xFF;
     ledController.hightLevel = !ledController.hightLevel;
     if (!ledController.hightLevel) {
         ledController.indicatorCounter++;
     }
     if (ledController.indicatorCounter == NUMBER_OF_DIGITS) {
         ledController.indicatorCounter = 0;
+        PORTD ^= 1 << PIN5;
         PORTB = ledController.indicatorData[ledController.indicatorCounter];
-        return true;
+        return;
     }
-    PORTB = ledController.indicatorData[ledController.indicatorCounter];
-    return false;
+    if (PORTD & (1 << PIN5)) {
+        PORTD ^= 1 << PIN5;
+    }
+    PORTD ^= 1 << PIN6;
+    if (!ledController.hightLevel) {
+        PORTB = ledController.indicatorData[ledController.indicatorCounter];
+    }
 }
 
-void setTimerValue (unsigned long int value) { // value in miliseconds
-    uint8_t minutes = 0;
-    uint8_t seconds = 0;
-    unsigned long int temp = value;
+void setArrayValue (uint8_t array[4], uint8_t length, uint8_t arrayStart) {
+    int i = 0;
+    for (i = arrayStart; i < arrayStart + DIGITS_PER_DISPLAY; ++i) {
+        ledController.indicatorData[i] = 0xFF;
+    }
+    for (i = arrayStart; i < arrayStart + length; ++i) {
+        ledController.indicatorData[i] = array[i - arrayStart];
+    }
+}
+
+void setTimerValue (unsigned long long int value) { // value in miliseconds
+    uint8_t digitsOfTimer[7];
+    uint8_t digitsToDispaly[DIGITS_PER_DISPLAY];
+    unsigned long int temp = value / 1000;
+    uint8_t seconds = temp % 60;
+    uint8_t minutes = temp / 60;
     uint8_t counter = 0;
-    uint8_t digitsToDisplay[7];
+    temp = value;
     for (int i = 6; i >= 0; --i) {
-        digitsToDisplay[i] = temp % 10;
-        temp /= 10;
-        if (i == 4) {
-            seconds = temp % 60;
-            minutes = (uint8_t)(temp / 60);
+        if (i == 3) {
             temp = seconds;
         }
-        if (i == 2) {
+        if (i == 1) {
             temp = minutes;
         }
+        digitsOfTimer[i] = temp % 10;
+        temp = temp / 10;
     }
     for (int i = 0; i < 7; ++i) {
-        if (i > 3) {
-            ledController.indicatorData[counter++] = digitsToDisplay[i];
-        } else {
-            if (digitsToDisplay[i] || counter) {
-                ledController.indicatorData[counter++] = digitsToDisplay[i];
-            }
+        if (!digitsOfTimer[i] && !counter) {
+            continue;
         }
+        uint8_t index = DIGITS_PER_DISPLAY - (counter + 1);
+        digitsToDispaly[index] = NUMBERS_TABLE[digitsOfTimer[i]];
+        if ((i == 1) || (i == 3)) {
+            digitsToDispaly[index] -= 1;
+        }
+        ++counter;
         if (counter == DIGITS_PER_DISPLAY) {
             break;
         }
     }
-    if (counter < DIGITS_PER_DISPLAY) {
-        for (; counter <= 4; ++counter) {
-            for (int i = counter; i >= 0; --i) {
-                ledController.indicatorData[i + 1] = ledController.indicatorData[i];
-                ledController.indicatorData[i] = 0xFF;
-            }
-        }
-    }
-
+    setArrayValue(digitsToDispaly, counter, 0);
 }
+
+void setCounterValue (uint16_t value) {
+    uint8_t counter = 0;
+    uint8_t digitsOfValue[DIGITS_PER_DISPLAY];
+    do {
+        digitsOfValue[counter] = NUMBERS_TABLE[value % 10];
+        value = (uint16_t)(value / 10);
+        counter++;
+    } while (value);
+    setArrayValue(digitsOfValue, counter, DIGITS_PER_DISPLAY);
+}
+
+

@@ -1,6 +1,6 @@
 #ifndef CD4017_CONTROL_H_INCLUDED
 #define CD4017_CONTROL_H_INCLUDED
-#define NUMBER_OF_DIGITS 4
+#define NUMBER_OF_DIGITS 8
 #define DIGITS_PER_DISPLAY 4
 struct LedController {
     uint8_t indicatorCounter : 4;
@@ -9,7 +9,8 @@ struct LedController {
     uint8_t indexesWithDot[3];
 };
 void initDispay();
-bool tick();
-void setTimerValue (unsigned long int value);
+void tick();
+void setCounterValue (uint16_t value);
+void setTimerValue (unsigned long long int value);
 
 #endif // CD4017_CONTROL_H_INCLUDED
