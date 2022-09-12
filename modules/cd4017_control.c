@@ -23,8 +23,8 @@ void initDispay() {
     DDRB = 0xFF;
     PORTB = 0xFF;
     for (int i = 0; i < NUMBER_OF_DIGITS; ++i) {
-        ledController.indicatorData[i] = NUMBERS_TABLE[i + 1] - 1;
-        // ledController.indicatorData[i] = 0xFF;
+        // ledController.indicatorData[i] = NUMBERS_TABLE[i + 1] - 1;
+        ledController.indicatorData[i] = 0x00;
     }
 }
 
@@ -62,6 +62,7 @@ void setArrayValue (uint8_t array[4], uint8_t length, uint8_t arrayStart) {
 void setTimerValue (unsigned long long int value) { // value in miliseconds
     uint8_t digitsOfTimer[7];
     uint8_t digitsToDispaly[DIGITS_PER_DISPLAY];
+    uint8_t *digitsToDisplayPointer = digitsToDispaly + (DIGITS_PER_DISPLAY - 1);
     unsigned long int temp = value / 1000;
     uint8_t seconds = temp % 60;
     uint8_t minutes = temp / 60;
@@ -81,11 +82,11 @@ void setTimerValue (unsigned long long int value) { // value in miliseconds
         if (!digitsOfTimer[i] && !counter) {
             continue;
         }
-        uint8_t index = DIGITS_PER_DISPLAY - (counter + 1);
-        digitsToDispaly[index] = NUMBERS_TABLE[digitsOfTimer[i]];
+        *digitsToDisplayPointer = NUMBERS_TABLE[digitsOfTimer[i]];
         if ((i == 1) || (i == 3)) {
-            digitsToDispaly[index] -= 1;
+            *digitsToDisplayPointer -= 1;
         }
+        --digitsToDisplayPointer;
         ++counter;
         if (counter == DIGITS_PER_DISPLAY) {
             break;
