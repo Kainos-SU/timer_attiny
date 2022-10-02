@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1662411444 source:/home/kapinos/Documents/avr/timer/main.c
+1662947470 source:/home/kapinos/Documents/avr/timer/main.c
 	<avr/io.h>
 	<avr/interrupt.h>
 	<stdbool.h>

@@ -14,28 +14,31 @@ volatile unsigned long long int milliseconds = 0;
 volatile unsigned int counterToDisplay = 0;
 volatile bool timerStarted = false;
 
-volatile struct simpleButtonStruct {
+struct simpleButtonStruct {
     bool defaultState: 1;
     bool prevState: 1;
-    unsigned int debounceTimer: 6;
-} simpleButton;
+    unsigned int debounceTimer: 8;
+};
 
-volatile struct fullButtonStruct {
-    bool defaultState: 1;
-    bool pressed: 1;
-    bool prevState: 1;
-    uint16_t timer: 8;
-} fullButton;
+struct simpleButtonStruct incrementButton = {false, false, 0};
+struct simpleButtonStruct decrementButton = {false, false, 0};
 
-bool handleSimpleButton(bool currentState) {
-    if ((simpleButton.defaultState == simpleButton.prevState) && (simpleButton.prevState != currentState) && !simpleButton.debounceTimer) {
-        simpleButton.debounceTimer = DEBOUNCE;
-        simpleButton.prevState = currentState;
+// volatile struct fullButtonStruct {
+//    bool defaultState: 1;
+//    bool pressed: 1;
+//    bool prevState: 1;
+//    uint16_t timer: 8;
+// } fullButton;
+
+bool handleSimpleButton(bool currentState, struct simpleButtonStruct* button) {
+    if ((button->defaultState == button->prevState) && (button->prevState != currentState) && !(button->debounceTimer)) {
+        button->debounceTimer = DEBOUNCE;
+        button->prevState = currentState;
         return true;
     }
-    if ((simpleButton.defaultState != simpleButton.prevState) && (simpleButton.prevState != currentState) && !simpleButton.debounceTimer) {
-        simpleButton.debounceTimer = DEBOUNCE;
-        simpleButton.prevState = currentState;
+    if ((button->defaultState != button->prevState) && (button->prevState != currentState) && !(button->debounceTimer)) {
+        button->debounceTimer = DEBOUNCE;
+        button->prevState = currentState;
         return false;
     }
     return false;
@@ -46,6 +49,7 @@ bool handleSimpleButton(bool currentState) {
 1 - press
 2 - hold
 */
+/*
 char handleFullButton (bool currentStatus) {
     if ((fullButton.defaultState == fullButton.prevState) && (fullButton.prevState != currentStatus)) {
         fullButton.prevState = currentStatus;
@@ -65,6 +69,7 @@ char handleFullButton (bool currentStatus) {
     }
     return 0;
 }
+*/
 
 ISR(TIMER0_COMPA_vect) {
     tick();
@@ -74,10 +79,11 @@ ISR(TIMER1_COMPA_vect) {
     if (timerStarted) {
         ++milliseconds;
     }
-    if (simpleButton.debounceTimer) {
-        --simpleButton.debounceTimer;
+    if (incrementButton.debounceTimer) {
+        --incrementButton.debounceTimer;
+    }else if (decrementButton.debounceTimer) {
+        --decrementButton.debounceTimer;
     }
-    ++fullButton.timer;
 }
 
 int main(void)
@@ -88,7 +94,8 @@ int main(void)
     OCR0A = 150;
     TCCR0A |= 1 << WGM01;
     TCCR0B |= 1 << CS00;
-    simpleButton.defaultState = (PIND >> PIN4) & 1;
+    incrementButton.defaultState = (PIND >> PIN4) & 1;
+    decrementButton.defaultState = (PIND >> PIN3) & 1;
     TCCR1B |= (1 << WGM12) | (1 << CS10) | (1 << CS11);
     OCR1AL = 187;
     OCR1AH = 0;
@@ -99,19 +106,24 @@ int main(void)
     while(1) {
         setTimerValue(milliseconds);
         setCounterValue(counterToDisplay);
-        if (handleSimpleButton((PIND >> PIN4) & 1)) {
+        if (handleSimpleButton((PIND >> PIN4) & 1, &incrementButton)) {
             if (timerStarted) ++counterToDisplay;
             timerStarted = true;
             milliseconds = 0;
         }
-        uint8_t secondButton = handleFullButton((PIND >> PIN3) & 1);
-        if (secondButton == 2) {
-            counterToDisplay = 0;
-            timerStarted = false;
-            milliseconds = 0;
-        } else if (secondButton == 1) {
-            --counterToDisplay;
+        if (handleSimpleButton((PIND >> PIN3) & 1, &decrementButton)) {
+            if (counterToDisplay) {
+                --counterToDisplay;
+            }
         }
+//        uint8_t secondButton = handleFullButton((PIND >> PIN3) & 1);
+//        if (secondButton == 2) {
+//            counterToDisplay = 0;
+//            timerStarted = false;
+//            milliseconds = 0;
+//        } else if (secondButton == 1 && counterToDisplay) {
+//            --counterToDisplay;
+//        }
     }
 
     return 0;
