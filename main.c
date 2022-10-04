@@ -6,8 +6,7 @@
 #include <stdbool.h>
 #include "modules/cd4017_control.h"
 #include <util/delay.h>
-#define DEBOUNCE 60
-#define HOLD 200
+#define DEBOUNCE 560
 
 
 volatile unsigned long long int milliseconds = 0;
@@ -17,7 +16,7 @@ volatile bool timerStarted = false;
 struct simpleButtonStruct {
     bool defaultState: 1;
     bool prevState: 1;
-    unsigned int debounceTimer: 8;
+    unsigned int debounceTimer: 14;
 };
 
 struct simpleButtonStruct incrementButton = {false, false, 0};
