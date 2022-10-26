@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "cd4017_control.h"
+#define TIMERS_DIGITS 5
 
 
 const uint8_t NUMBERS_TABLE [] = {
@@ -23,11 +24,11 @@ void initDispay() {
     DDRB = 0xFF;
     PORTB = 0xFF;
     for (int i = 0; i < NUMBER_OF_DIGITS; ++i) {
-        // ledController.indicatorData[i] = NUMBERS_TABLE[i + 1] - 1;
         ledController.indicatorData[i] = 0x00;
     }
 }
 
+// Переключення живлення на аноди
 void tick() {
     PORTB = 0xFF;
     ledController.hightLevel = !ledController.hightLevel;
@@ -59,34 +60,47 @@ void setArrayValue (uint8_t array[4], uint8_t length, uint8_t arrayStart) {
     }
 }
 
-void setTimerValue (unsigned long long int value) { // value in miliseconds
-    uint8_t digitsOfTimer[7];
-    uint8_t digitsToDispaly[DIGITS_PER_DISPLAY];
-    uint8_t *digitsToDisplayPointer = digitsToDispaly + (DIGITS_PER_DISPLAY - 1);
-    unsigned long int temp = value / 1000;
-    uint8_t seconds = temp % 60;
-    uint8_t minutes = temp / 60;
-    uint8_t counter = 0;
-    temp = value;
-    for (int i = 6; i >= 0; --i) {
-        if (i == 3) {
-            temp = seconds;
-        }
-        if (i == 1) {
-            temp = minutes;
-        }
-        digitsOfTimer[i] = temp % 10;
-        temp = temp / 10;
+void blankDisplay(enum DISPLAYS display) {
+    uint8_t blankArray[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    if(display == COUNTER) {
+        setArrayValue(blankArray, 4, DIGITS_PER_DISPLAY);
+    } else {
+        setArrayValue(blankArray, 4, 0);
     }
-    for (int i = 0; i < 7; ++i) {
-        if (!digitsOfTimer[i] && !counter) {
-            continue;
+}
+
+// Функція отримання окремих цифр часу
+uint8_t separateTimeDigits (unsigned long int seconds, uint8_t *array, uint8_t arrayLength) {
+    uint8_t counter = 0;
+    do {
+        uint8_t digit;
+        if ((counter++ % 2) && (seconds >= 6)) {
+            digit = seconds % 6;
+            seconds = (seconds - digit) / 6;
+        } else {
+            digit = seconds % 10;
+            seconds /= 10;
         }
-        *digitsToDisplayPointer = NUMBERS_TABLE[digitsOfTimer[i]];
-        if ((i == 1) || (i == 3)) {
-            *digitsToDisplayPointer -= 1;
+        *array = digit;
+        array++;
+
+    } while (seconds);
+    return counter;
+}
+
+void setTimerValue (unsigned long long int value) { // value in miliseconds
+    uint8_t digitsOfTimer[TIMERS_DIGITS];
+    uint8_t digitsToDispaly[DIGITS_PER_DISPLAY];
+    uint8_t counter = 0;
+    unsigned long int seconds = value / 1000;
+    uint8_t numberOfDigits = separateTimeDigits(seconds, digitsOfTimer, TIMERS_DIGITS);
+    uint8_t *pointerToDisplayDigits = numberOfDigits > DIGITS_PER_DISPLAY ? (digitsToDispaly + DIGITS_PER_DISPLAY - 1) : (digitsToDispaly + numberOfDigits - 1);
+    for (int i = numberOfDigits - 1; i >= 0; --i) {
+        *pointerToDisplayDigits = NUMBERS_TABLE[digitsOfTimer[i]];
+        if ((i == 2) || (i == 4)) {
+            *pointerToDisplayDigits -= 1;
         }
-        --digitsToDisplayPointer;
+        --pointerToDisplayDigits;
         ++counter;
         if (counter == DIGITS_PER_DISPLAY) {
             break;
