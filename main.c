@@ -56,14 +56,16 @@ void timerInit() {
 volatile struct simpleButtonStruct incrementButton = {false, false, 0};
 volatile struct simpleButtonStruct decrementButton = {false, false, 0};
 
+
 bool handleSimpleButton(bool currentState, volatile struct simpleButtonStruct* button) {
     bool result = false;
-    if ((button->defaultState == button->prevState) && (button->prevState != currentState) && !(button->debounceTimer)) {
+    if ((button->prevState != currentState) && (button->debounceTimer == 0)) {
         button->debounceTimer = DEBOUNCE;
-
-        result = true;
+        button->prevState = currentState;
+        if (button->defaultState != currentState) {
+            result = true;
+        }
     }
-    button->prevState = currentState;
     return result;
 }
 
